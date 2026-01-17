@@ -1,178 +1,204 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Itzzsophia Simulator - Multiplayer</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    button, input {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
-    }
-    button:disabled {
-      background: #ccc;
-      color: #666;
-      cursor: not-allowed;
-    }
-    #result, #totals, #playersList {
-      margin-top: 20px;
-      font-size: 1.2em;
-      color: #2a9d8f;
-    }
-    #playersList p {
-      margin: 5px 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>marty.oobe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+        :root {
+            --bg-deep: #05120f;
+            --bg-accent: #0a241e;
+            --emerald: #10b981;
+            --mint: #34d399;
+            --text-main: #ecfdf5;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .bg-gradient {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, var(--bg-accent) 0%, var(--bg-deep) 100%);
+            z-index: -2;
+        }
+
+        .leaf-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+            filter: blur(4px);
+            opacity: 0.25;
+        }
+
+        .leaf {
+            position: absolute;
+            bottom: -10%;
+            fill: var(--emerald);
+            animation: rise linear infinite;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) rotate(0deg) translateX(0); opacity: 0; }
+            15% { opacity: 0.6; }
+            85% { opacity: 0.6; }
+            100% { transform: translateY(-120vh) rotate(360deg) translateX(100px); opacity: 0; }
+        }
+
+        .profile-box {
+            width: 100px;
+            height: 100px;
+            border-radius: 28px;
+            overflow: hidden;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            background: rgba(10, 36, 30, 0.8);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .glass-card {
+            background: rgba(10, 36, 30, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            padding: 2rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .video-scroll {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 10px 0 20px 0;
+            scrollbar-width: none;
+        }
+        .video-scroll::-webkit-scrollbar { display: none; }
+
+        .video-container {
+            flex: 0 0 260px;
+            height: 460px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: revealUp 0.8s ease-out forwards;
+        }
+
+        @keyframes revealUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body>
-  <h1>Itzzsophia Simulator - Multiplayer</h1>
-  
-  <!-- Multiplayer Join Section -->
-  <input id="usernameInput" type="text" placeholder="Enter your username">
-  <button id="joinGame">Join Game</button>
-  <button id="leaveGame" style="display:none;">Leave Game</button>
-  
-  <h2>Players in Game</h2>
-  <div id="playersList"></div>
-  
-  <hr>
-  
-  <!-- Gacha Simulator Section -->
-  <button id="drawButton">Draw Gacha Character</button>
-  <button id="editButton" disabled>Edit Gacha Video</button>
-  <button id="uploadButton" disabled>Upload Gacha Video</button>
-  
-  <div id="result"></div>
-  <div id="totals"><strong>Your Total:</strong> 0 Views | 0 Subs</div>
-  
-  <!-- Firebase Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  
-  <script>
-    // Firebase configuration – replace with your own project details.
-    const firebaseConfig = {
-     apiKey: "AIzaSyATE5uCh_Ob5Igvo46lANknrSyyZ7GREGA",
-     authDomain: "itzzsophia-simulator.firebaseapp.com",
-     projectId: "itzzsophia-simulator",
-     databaseURL: "https://itzzsophia-simulator-default-rtdb.europe-west1.firebasedatabase.app/",
-     storageBucket: "itzzsophia-simulator.firebasestorage.app",
-     messagingSenderId: "533863261190",
-     appId: "1:533863261190:web:68bb31324e98bc64c14f87"
-    };
-    
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    
-    // Multiplayer: Handle username input and player list
-    const usernameInput = document.getElementById("usernameInput");
-    const joinGameBtn = document.getElementById("joinGame");
-    const leaveGameBtn = document.getElementById("leaveGame");
-    const playersListDiv = document.getElementById("playersList");
-    let currentPlayerRef = null;
-    
-    joinGameBtn.addEventListener("click", () => {
-      const username = usernameInput.value.trim();
-      if (username === "") {
-        alert("Please enter a username.");
-        return;
-      }
-      // Add player to Firebase under 'players' node with initial stats
-      currentPlayerRef = database.ref('players').push();
-      currentPlayerRef.set({ username, views: 0, subs: 0 });
-      
-      // Hide join controls and show leave button
-      usernameInput.style.display = "none";
-      joinGameBtn.style.display = "none";
-      leaveGameBtn.style.display = "inline-block";
-    });
-    
-    leaveGameBtn.addEventListener("click", () => {
-      if (currentPlayerRef) {
-        currentPlayerRef.remove();
-        currentPlayerRef = null;
-      }
-      // Reset join controls
-      usernameInput.style.display = "inline-block";
-      joinGameBtn.style.display = "inline-block";
-      leaveGameBtn.style.display = "none";
-    });
-    
-    // Listen for changes in the players list and update UI
-    database.ref('players').on('value', (snapshot) => {
-      const playersData = snapshot.val();
-      let playersHtml = "";
-      for (let key in playersData) {
-        let player = playersData[key];
-        playersHtml += `<p>${player.username} - ${player.views || 0} Views, ${player.subs || 0} Subs</p>`;
-      }
-      playersListDiv.innerHTML = playersHtml;
-    });
-    
-    // Gacha Simulator: Local simulation for this user
-    let drawCompleted = false;
-    let editCompleted = false;
-    let totalViews = 0;
-    let totalSubs = 0;
-    
-    const drawButton = document.getElementById("drawButton");
-    const editButton = document.getElementById("editButton");
-    const uploadButton = document.getElementById("uploadButton");
-    const resultDiv = document.getElementById("result");
-    const totalsDiv = document.getElementById("totals");
-    
-    // Draw Gacha Character: Enables the Edit button
-    drawButton.addEventListener("click", function() {
-      drawCompleted = true;
-      resultDiv.innerHTML = "<p>Gacha character drawn! Now you can edit the gacha video.</p>";
-      editButton.disabled = false;
-      uploadButton.disabled = true;
-    });
-    
-    // Edit Gacha Video: Enables the Upload button
-    editButton.addEventListener("click", function() {
-      if (!drawCompleted) {
-        alert("Please draw a gacha character first!");
-        return;
-      }
-      editCompleted = true;
-      resultDiv.innerHTML = "<p>Gacha video edited! Now you can upload the gacha video.</p>";
-      uploadButton.disabled = false;
-    });
-    
-    // Upload Gacha Video: Randomizes views/subs, updates totals, updates multiplayer stats, and resets steps
-    uploadButton.addEventListener("click", function() {
-      if (!editCompleted) {
-        alert("Please edit the gacha video first!");
-        return;
-      }
-      const views = Math.floor(Math.random() * 100000);
-      const subs = Math.floor(Math.random() * 5000);
-      
-      totalViews += views;
-      totalSubs += subs;
-      
-      resultDiv.innerHTML = `<p>🎉 This video got ${views} views and ${subs} subs! 🎉</p>`;
-      totalsDiv.innerHTML = `<strong>Your Total:</strong> ${totalViews} Views | ${totalSubs} Subs`;
-      
-      // Update your player record in Firebase if you're in the game
-      if (currentPlayerRef) {
-        currentPlayerRef.update({ views: totalViews, subs: totalSubs });
-      }
-      
-      // Reset steps for a new cycle
-      drawCompleted = false;
-      editCompleted = false;
-      editButton.disabled = true;
-      uploadButton.disabled = true;
-    });
-  </script>
+<body class="pb-20">
+
+    <div class="bg-gradient"></div>
+    <div id="leafContainer" class="leaf-container"></div>
+
+    <main class="flex flex-col items-center pt-12 px-6">
+        
+        <div class="reveal flex flex-col items-center text-center mb-10">
+            <div class="profile-box mb-4">
+                <img src="https://p19-common-sign-useastred.tiktokcdn-eu.com/tos-useast2a-avt-0068-euttp/ad0adb547b2683178326da6726a851ca~tplv-tiktokx-cropcenter:1080:1080.jpeg?dr=10399&refresh_token=b72b69d2&x-expires=1768838400&x-signature=B30ZpHRsO7ib4H3b5ltvgx6%2F7C0%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=no1a" 
+                     alt="Marty" class="w-full h-full object-cover">
+            </div>
+            <h1 class="text-3xl font-black tracking-tight">marty<span class="text-emerald-400">.oobe</span></h1>
+            <p class="text-emerald-400/60 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Techtoker ig maybe</p>
+        </div>
+
+        <div class="reveal glass-card mb-12" style="animation-delay: 0.2s;">
+            <p class="text-emerald-100/80 text-lg font-medium leading-relaxed">
+                My goal <span class="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">is to hit <span class="text-white font-extrabold"> 10K followers</span> on TikTok.
+            </p>
+            <div class="mt-6 flex justify-center">
+                <div class="h-[1px] w-12 bg-emerald-500/30"></div>
+            </div>
+        </div>
+
+        <div class="reveal w-full max-w-5xl" style="animation-delay: 0.4s;">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="h-[1px] flex-grow bg-white/10"></div>
+                <h2 class="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Recent Content</h2>
+                <div class="h-[1px] flex-grow bg-white/10"></div>
+            </div>
+
+            <div class="video-scroll">
+                <div class="video-container">
+                    <iframe 
+                        src="https://www.tiktok.com/player/v1/7594511155708841219" 
+                        style="width:100%; height:100%; border:none;" 
+                        allow="fullscreen">
+                    </iframe>
+                </div>
+                <div class="video-container">
+                    <iframe 
+                        src="https://www.tiktok.com/player/v1/7591530786403159318" 
+                        style="width:100%; height:100%; border:none;" 
+                        allow="fullscreen">
+                    </iframe>
+                </div>
+                <div class="video-container">
+                    <iframe 
+                        src="https://www.tiktok.com/player/v1/7590812684816321814" 
+                        style="width:100%; height:100%; border:none;" 
+                        allow="fullscreen">
+                    </iframe>
+                </div>
+            </div>
+            <p class="text-center text-[9px] text-white/20 mt-4 uppercase tracking-widest">Visit my profile for more content</p>
+        </div>
+
+    </main>
+
+    <script>
+        function createLeaves() {
+            const container = document.getElementById('leafContainer');
+            const leafCount = 15;
+            const paths = [
+                "M12,2C12,2 4,10 4,16C4,18.21 5.79,20 8,20C10.21,20 12,18.21 12,16C12,18.21 13.79,20 16,20C18.21,20 20,18.21 20,16C20,10 12,2 12,2Z",
+                "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8.17,20C12.31,20 15.89,16.75 16.32,12.63L18.62,10.33L17,8Z"
+            ];
+
+            for (let i = 0; i < leafCount; i++) {
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("viewBox", "0 0 24 24");
+                svg.classList.add("leaf");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", paths[Math.floor(Math.random() * paths.length)]);
+                svg.appendChild(path);
+
+                const size = Math.random() * 30 + 15;
+                const left = Math.random() * 100;
+                const duration = Math.random() * 12 + 8;
+                const delay = Math.random() * 15;
+
+                svg.style.width = `${size}px`;
+                svg.style.left = `${left}%`;
+                svg.style.animationDuration = `${duration}s`;
+                svg.style.animationDelay = `-${delay}s`;
+                svg.style.opacity = Math.random() * 0.2 + 0.1;
+                container.appendChild(svg);
+            }
+        }
+        window.onload = createLeaves;
+    </script>
 </body>
 </html>
